@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { debounce } from "lodash";
 
 interface Advocate {
   firstName: string;
@@ -15,6 +16,28 @@ interface Advocate {
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
   const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filterAdvocates = useCallback((term: string) => {
+    console.log("filtering advocates...");
+    const trimmedTerm = term.trim().toLowerCase();
+    const filtered = advocates.filter((advocate) => {
+      return (
+        advocate.firstName.toLowerCase().includes(trimmedTerm) ||
+        advocate.lastName.toLowerCase().includes(trimmedTerm) ||
+        advocate.city.toLowerCase().includes(trimmedTerm) ||
+        advocate.degree.toLowerCase().includes(trimmedTerm) ||
+        advocate.specialties.some(specialty => specialty.toLowerCase().includes(trimmedTerm)) ||
+        advocate.yearsOfExperience.toString().includes(trimmedTerm)
+      );
+    });
+    setFilteredAdvocates(filtered);
+  }, [advocates]);
+
+  const debouncedFilter = useCallback(
+    debounce((term: string) => filterAdvocates(term), 600),
+    [advocates]
+  );
 
   useEffect(() => {
     console.log("fetching advocates...");
@@ -28,27 +51,14 @@ export default function Home() {
   }, []);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const searchTerm = e.target.value;
-
-    document.getElementById("search-term")!.innerHTML = searchTerm;
-
-    console.log("filtering advocates...");
-    const filteredAdvocates = advocates.filter((advocate) => {
-      return (
-        advocate.firstName.includes(searchTerm) ||
-        advocate.lastName.includes(searchTerm) ||
-        advocate.city.includes(searchTerm) ||
-        advocate.degree.includes(searchTerm) ||
-        advocate.specialties.some(specialty => specialty.includes(searchTerm)) ||
-        advocate.yearsOfExperience.toString().includes(searchTerm)
-      );
-    });
-
-    setFilteredAdvocates(filteredAdvocates);
+    const newSearchTerm = e.target.value;
+    setSearchTerm(newSearchTerm);
+    debouncedFilter(newSearchTerm);
   };
 
   const onClick = () => {
     console.log(advocates);
+    setSearchTerm("");
     setFilteredAdvocates(advocates);
   };
 
@@ -60,9 +70,13 @@ export default function Home() {
       <div>
         <p>Search</p>
         <p>
-          Searching for: <span id="search-term"></span>
+          Searching for: <span>{searchTerm}</span>
         </p>
-        <input style={{ border: "1px solid black" }} onChange={onChange} />
+        <input 
+          style={{ border: "1px solid black" }} 
+          value={searchTerm}
+          onChange={onChange} 
+        />
         <button onClick={onClick}>Reset Search</button>
       </div>
       <br />
