@@ -18,6 +18,11 @@ export default function Home() {
   const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
+  const formatPhoneNumber = (phone: number): string => {
+    const phoneStr = phone.toString();
+    return `(${phoneStr.slice(0, 3)})-${phoneStr.slice(3, 6)}-${phoneStr.slice(6)}`;
+  };
+
   const filterAdvocates = useCallback((term: string) => {
     console.log("filtering advocates...");
     const trimmedTerm = term.trim().toLowerCase();
@@ -63,54 +68,54 @@ export default function Home() {
   };
 
   return (
-    <main style={{ margin: "24px" }}>
-      <h1>Solace Advocates</h1>
-      <br />
-      <br />
-      <div>
-        <p>Search</p>
-        <p>
-          Searching for: <span>{searchTerm}</span>
-        </p>
+    <main className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-center mb-8 text-3xl font-bold">Solace Advocates</h1>
+      <div className="text-center mb-8 flex gap-4 justify-center items-center">
+        <span className="font-medium">Search</span>
         <input 
-          style={{ border: "1px solid black" }} 
+          className="border border-black px-3 py-2 rounded"
+          placeholder="Search for Advocates"
           value={searchTerm}
           onChange={onChange} 
         />
-        <button onClick={onClick}>Reset Search</button>
+        <button className="px-4 py-2 bg-gray-100 border border-gray-300 rounded cursor-pointer hover:bg-gray-200" onClick={onClick}>Reset</button>
       </div>
-      <br />
-      <br />
-      <table>
+      <table className="mx-auto border-collapse w-full">
         <thead>
           <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>City</th>
-            <th>Degree</th>
-            <th>Specialties</th>
-            <th>Years of Experience</th>
-            <th>Phone Number</th>
+            <th className="table-header">Name</th>
+            <th className="table-header">City</th>
+            <th className="table-header">Degree</th>
+            <th className="table-header">Specialties</th>
+            <th className="table-header w-20">Experience (Years)</th>
+            <th className="table-header w-32">Phone</th>
           </tr>
         </thead>
         <tbody>
-          {filteredAdvocates.map((advocate, index) => {
-            return (
-              <tr key={`${advocate.lastName}-${index}`}>
-                <td>{advocate.firstName}</td>
-                <td>{advocate.lastName}</td>
-                <td>{advocate.city}</td>
-                <td>{advocate.degree}</td>
-                <td>
-                  {advocate.specialties.map((s, idx) => (
-                    <div key={idx}>{s}</div>
-                  ))}
-                </td>
-                <td>{advocate.yearsOfExperience}</td>
-                <td>{advocate.phoneNumber}</td>
-              </tr>
-            );
-          })}
+          {filteredAdvocates.length === 0 ? (
+            <tr>
+              <td colSpan={6} className="table-cell text-center">No Advocates found, please search again</td>
+            </tr>
+          ) : (
+            filteredAdvocates.map((advocate, index) => {
+              return (
+                <tr key={`${advocate.lastName}-${index}`} className="even:bg-gray-50">
+                  <td className="table-cell">{advocate.firstName} {advocate.lastName}</td>
+                  <td className="table-cell">{advocate.city}</td>
+                  <td className="table-cell">{advocate.degree}</td>
+                  <td className="table-cell">
+                    <ul className="list-disc list-inside">
+                      {advocate.specialties.map((s, idx) => (
+                        <li key={idx}>{s}</li>
+                      ))}
+                    </ul>
+                  </td>
+                  <td className="table-cell w-20 text-center">{advocate.yearsOfExperience}</td>
+                  <td className="table-cell w-32 whitespace-nowrap">{formatPhoneNumber(advocate.phoneNumber)}</td>
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
     </main>
