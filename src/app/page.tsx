@@ -2,20 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { debounce } from "lodash";
-
-interface Advocate {
-  firstName: string;
-  lastName: string;
-  city: string;
-  degree: string;
-  specialties: string[];
-  yearsOfExperience: number;
-  phoneNumber: number;
-}
+import { Advocate } from "../types/advocate";
 
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
-  const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const formatPhoneNumber = (phone: number): string => {
@@ -23,48 +13,38 @@ export default function Home() {
     return `(${phoneStr.slice(0, 3)})-${phoneStr.slice(3, 6)}-${phoneStr.slice(6)}`;
   };
 
-  const filterAdvocates = useCallback((term: string) => {
-    console.log("filtering advocates...");
-    const trimmedTerm = term.trim().toLowerCase();
-    const filtered = advocates.filter((advocate) => {
-      return (
-        advocate.firstName.toLowerCase().includes(trimmedTerm) ||
-        advocate.lastName.toLowerCase().includes(trimmedTerm) ||
-        advocate.city.toLowerCase().includes(trimmedTerm) ||
-        advocate.degree.toLowerCase().includes(trimmedTerm) ||
-        advocate.specialties.some(specialty => specialty.toLowerCase().includes(trimmedTerm)) ||
-        advocate.yearsOfExperience.toString().includes(trimmedTerm)
-      );
-    });
-    setFilteredAdvocates(filtered);
-  }, [advocates]);
+  const fetchAdvocates = useCallback(async (searchTerm: string) => {
+    const url = searchTerm.trim() 
+      ? `/api/advocates?searchTerm=${encodeURIComponent(searchTerm)}` 
+      : '/api/advocates';
+      
+    try {
+      const response = await fetch(url);
+      const jsonResponse = await response.json();
+      setAdvocates(jsonResponse.data);
+    } catch (error) {
+      console.error('Error fetching advocates:', error);
+    }
+  }, []);
 
-  const debouncedFilter = useCallback(
-    debounce((term: string) => filterAdvocates(term), 600),
-    [advocates]
+  const debouncedFetch = useCallback(
+    debounce((term: string) => fetchAdvocates(term), 600),
+    [fetchAdvocates]
   );
 
   useEffect(() => {
-    console.log("fetching advocates...");
-    fetch("/api/advocates").then((response) => {
-      response.json().then((jsonResponse) => {
-        console.log(jsonResponse.data)
-        setAdvocates(jsonResponse.data);
-        setFilteredAdvocates(jsonResponse.data);
-      });
-    });
-  }, []);
+    fetchAdvocates("");
+  }, [fetchAdvocates]);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSearchTerm = e.target.value;
     setSearchTerm(newSearchTerm);
-    debouncedFilter(newSearchTerm);
+    debouncedFetch(newSearchTerm);
   };
 
   const onClick = () => {
-    console.log(advocates);
     setSearchTerm("");
-    setFilteredAdvocates(advocates);
+    fetchAdvocates("");
   };
 
   return (
@@ -92,12 +72,12 @@ export default function Home() {
           </tr>
         </thead>
         <tbody>
-          {filteredAdvocates.length === 0 ? (
+          {advocates.length === 0 ? (
             <tr>
               <td colSpan={6} className="table-cell text-center">No Advocates found, please search again</td>
             </tr>
           ) : (
-            filteredAdvocates.map((advocate, index) => {
+            advocates.map((advocate, index) => {
               return (
                 <tr key={`${advocate.lastName}-${index}`} className="even:bg-gray-50">
                   <td className="table-cell">{advocate.firstName} {advocate.lastName}</td>
